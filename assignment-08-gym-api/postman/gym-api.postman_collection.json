@@ -1,0 +1,360 @@
+{
+  "info": {
+    "name": "Gym & Fitness Club Management API",
+    "_postman_id": "b7e2f1a0-0000-4000-8000-gymfitnessapi01",
+    "description": "End-to-end collection for the Gym & Fitness Club Management REST API.\n\nHow to use:\n1. Set the `baseUrl` collection variable (default http://localhost:5000).\n2. Run 'Register Member' then 'Login' — the session cookie is stored automatically by Postman's cookie jar (send credentials with the same jar).\n3. Run the flow top to bottom. The 'Booking — Capacity Reached' folder demonstrates maxCapacity=2 rejecting a 3rd booking.\n\nAll requests share the session cookie, so keep 'Automatically follow redirects' and cookie storage enabled.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "classId", "value": "" },
+    { "key": "capacityClassId", "value": "" },
+    { "key": "memberId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data._id) { pm.collectionVariables.set('memberId', json.data._id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"secret123\",\n  \"membershipTier\": \"Gold\",\n  \"durationMonths\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_doe\",\n  \"password\": \"secret123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Get Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('has remainingDays', () => pm.expect(pm.response.json().data).to.have.property('remainingDays'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Classes",
+      "item": [
+        {
+          "name": "Create Class",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data._id) { pm.collectionVariables.set('classId', json.data._id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Morning Yoga\",\n  \"trainerName\": \"Alice\",\n  \"scheduleDate\": \"2026-12-31T08:00:00.000Z\",\n  \"durationMinutes\": 60,\n  \"maxCapacity\": 20\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/classes", "host": ["{{baseUrl}}"], "path": ["api", "classes"] }
+          }
+        },
+        {
+          "name": "Create Class — Invalid (maxCapacity 0 -> 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('status 400', () => pm.response.to.have.status(400));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bad Class\",\n  \"trainerName\": \"Bob\",\n  \"scheduleDate\": \"2026-12-31T08:00:00.000Z\",\n  \"maxCapacity\": 0\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/classes", "host": ["{{baseUrl}}"], "path": ["api", "classes"] }
+          }
+        },
+        {
+          "name": "List Upcoming Classes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/classes", "host": ["{{baseUrl}}"], "path": ["api", "classes"] }
+          }
+        },
+        {
+          "name": "List Classes — Filter by Trainer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/classes?trainer=Alice",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "classes"],
+              "query": [{ "key": "trainer", "value": "Alice" }]
+            }
+          }
+        },
+        {
+          "name": "Get Class By Id (populated members)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/classes/{{classId}}", "host": ["{{baseUrl}}"], "path": ["api", "classes", "{{classId}}"] }
+          }
+        },
+        {
+          "name": "Book Class",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/classes/{{classId}}/book", "host": ["{{baseUrl}}"], "path": ["api", "classes", "{{classId}}", "book"] }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/classes/{{classId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "classes", "{{classId}}", "cancel"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking — Capacity Reached (maxCapacity 2, 3rd attempt fails)",
+      "description": "Demonstrates the 'Class capacity reached' rule. Register/login 3 distinct members, create a class with maxCapacity=2, book with members 1 and 2 (200), then attempt a 3rd booking (400).",
+      "item": [
+        {
+          "name": "1. Create Small Class (maxCapacity 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data._id) { pm.collectionVariables.set('capacityClassId', json.data._id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"HIIT Small Group\",\n  \"trainerName\": \"Carol\",\n  \"scheduleDate\": \"2026-12-31T18:00:00.000Z\",\n  \"maxCapacity\": 2\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/classes", "host": ["{{baseUrl}}"], "path": ["api", "classes"] }
+          }
+        },
+        {
+          "name": "2. Register Member A",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"cap_a\",\n  \"email\": \"cap_a@example.com\",\n  \"password\": \"secret123\",\n  \"durationMonths\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          }
+        },
+        {
+          "name": "3. Login Member A",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"cap_a\",\n  \"password\": \"secret123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "4. Member A Books (seat 1 of 2 -> 200)",
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/classes/{{capacityClassId}}/book", "host": ["{{baseUrl}}"], "path": ["api", "classes", "{{capacityClassId}}", "book"] }
+          }
+        },
+        {
+          "name": "5. Register Member B",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"cap_b\",\n  \"email\": \"cap_b@example.com\",\n  \"password\": \"secret123\",\n  \"durationMonths\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          }
+        },
+        {
+          "name": "6. Login Member B",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"cap_b\",\n  \"password\": \"secret123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "7. Member B Books (seat 2 of 2 -> 200)",
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/classes/{{capacityClassId}}/book", "host": ["{{baseUrl}}"], "path": ["api", "classes", "{{capacityClassId}}", "book"] }
+          }
+        },
+        {
+          "name": "8. Register Member C",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"cap_c\",\n  \"email\": \"cap_c@example.com\",\n  \"password\": \"secret123\",\n  \"durationMonths\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          }
+        },
+        {
+          "name": "9. Login Member C",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"cap_c\",\n  \"password\": \"secret123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "10. Member C Books (3rd attempt -> 400 Class capacity reached)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('message is capacity reached', () => pm.expect(pm.response.json().message).to.eql('Class capacity reached'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/classes/{{capacityClassId}}/book", "host": ["{{baseUrl}}"], "path": ["api", "classes", "{{capacityClassId}}", "book"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "Renew Membership",
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"additionalMonths\": 3,\n  \"tier\": \"Platinum\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/members/{{memberId}}/renew", "host": ["{{baseUrl}}"], "path": ["api", "members", "{{memberId}}", "renew"] }
+          }
+        },
+        {
+          "name": "Get Expired Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/members/expired", "host": ["{{baseUrl}}"], "path": ["api", "members", "expired"] }
+          }
+        }
+      ]
+    }
+  ]
+}
